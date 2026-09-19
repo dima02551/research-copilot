@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.venv/
+
+# Build outputs
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# Backend runtime data
+*.db
+backend/data/
+
+# Frontend/testing artifacts
+test-results/
+playwright-report/
+blob-report/
+coverage/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+__pycache__/
+*.pyc
