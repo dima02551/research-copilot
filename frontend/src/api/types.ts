@@ -1,25 +1,10 @@
-// Hand-written to mirror backend/app/schemas.py.
-// Run `npm run gen:types` against a running backend to generate a full
-// OpenAPI-derived schema.ts instead, once the API is stable.
+// Friendly aliases over the OpenAPI-generated schema (src/api/schema.ts).
+// schema.ts is regenerated from the live backend via `npm run gen:types` —
+// never edit it by hand. This file is the one place that translates its
+// verbose generated names into the names the rest of the app imports, so a
+// backend field rename becomes a type error here instead of silent drift.
+import type { components } from './schema';
 
-export interface Insight {
-  id: number;
-  title: string;
-  summary: string;
-  evidence_quote: string;
-  source_url: string;
-  source_title: string;
-  relevance: 'relevant' | 'not_relevant' | null;
-}
-
-export type JobStatus = 'pending' | 'searching' | 'synthesizing' | 'done' | 'failed';
-
-export interface Job {
-  id: number;
-  topic: string;
-  status: JobStatus;
-  stage_detail: string;
-  error: string | null;
-  demo_mode: boolean;
-  insights: Insight[];
-}
+export type Insight = components['schemas']['InsightOut'];
+export type JobStatus = components['schemas']['JobStatus'];
+export type Job = components['schemas']['JobOut'];

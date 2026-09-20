@@ -1,5 +1,9 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Literal, Optional
+
+from .models import JobStatus
+
+Relevance = Literal["relevant", "not_relevant"]
 
 
 class StartResearchRequest(BaseModel):
@@ -13,13 +17,13 @@ class InsightOut(BaseModel):
     evidence_quote: str
     source_url: str
     source_title: str
-    relevance: Optional[str] = None
+    relevance: Optional[Relevance] = None
 
 
 class JobOut(BaseModel):
     id: int
     topic: str
-    status: str
+    status: JobStatus
     stage_detail: str
     error: Optional[str] = None
     demo_mode: bool
@@ -27,7 +31,7 @@ class JobOut(BaseModel):
 
 
 class RelevanceUpdate(BaseModel):
-    relevance: Optional[str]  # "relevant" | "not_relevant" | null to clear
+    relevance: Optional[Relevance]  # null clears it
 
 
 # ── Schema Claude's structured output must match ──────────────────────────
