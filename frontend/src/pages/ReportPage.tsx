@@ -52,10 +52,75 @@ const InsightCard: React.FC<{ insight: Insight; jobId: number }> = ({ insight, j
   );
 };
 
+const RELEVANCE_LABEL: Record<string, string> = {
+  relevant: 'Релевантно',
+  not_relevant: 'Не релевантно',
+};
+
+const InsightRow: React.FC<{ insight: Insight; jobId: number }> = ({ insight, jobId }) => {
+  const queryClient = useQueryClient();
+  const setRelevance = useMutation({
+    mutationFn: (relevance: 'relevant' | 'not_relevant' | null) => api.setRelevance(insight.id, relevance),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['job', jobId] }),
+  });
+
+  return (
+    <tr className="border-b border-border last:border-0 align-top" data-testid="insight-row">
+      <td className="py-3 pr-4">
+        <p className="font-medium">{insight.title}</p>
+        <p className="text-xs text-muted mt-1">{insight.summary}</p>
+      </td>
+      <td className="py-3 pr-4">
+        <a
+          href={insight.source_url}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs text-accent hover:underline"
+        >
+          {insight.source_title} ↗
+        </a>
+      </td>
+      <td className="py-3 pr-4">
+        {insight.relevance ? (
+          <Badge tone={insight.relevance === 'relevant' ? 'positive' : 'negative'}>
+            {RELEVANCE_LABEL[insight.relevance]}
+          </Badge>
+        ) : (
+          <span className="text-xs text-muted">—</span>
+        )}
+      </td>
+      <td className="py-3">
+        <div className="flex gap-2">
+          <Button
+            variant={insight.relevance === 'relevant' ? 'primary' : 'secondary'}
+            onClick={() => setRelevance.mutate(insight.relevance === 'relevant' ? null : 'relevant')}
+            className="text-xs px-2.5 py-1"
+          >
+            👍
+          </Button>
+          <Button
+            variant={insight.relevance === 'not_relevant' ? 'primary' : 'secondary'}
+            onClick={() => setRelevance.mutate(insight.relevance === 'not_relevant' ? null : 'not_relevant')}
+            className="text-xs px-2.5 py-1"
+          >
+            👎
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+// Карточки хороши для чтения одного-двух инсайтов вдумчиво; таблица — чтобы
+// быстро просканировать весь отчёт и сравнить источники/релевантность разом.
+// Оба режима читают одни и те же данные, разница только в разметке.
+type ReportView = 'cards' | 'table';
+
 export const ReportPage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const id = Number(jobId);
   const queryClient = useQueryClient();
+  const [view, setView] = React.useState<ReportView>('cards');
 
   const { data: job, isLoading } = useQuery({
     queryKey: ['job', id],
@@ -98,26 +163,66 @@ export const ReportPage: React.FC = () => {
 
       {job.status === 'done' && (
         <>
-          <div className="flex gap-2 mb-6">
-            <a href={api.exportUrl(id, 'md')} download>
-              <Button variant="secondary" className="text-xs">
-                Экспорт в Markdown
-              </Button>
-            </a>
-            <a href={api.exportUrl(id, 'pdf')} download>
-              <Button variant="secondary" className="text-xs">
-                Экспорт в PDF
-              </Button>
-            </a>
+          <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
+            <div className="flex gap-2">
+              <a href={api.exportUrl(id, 'md')} download>
+                <Button variant="secondary" className="text-xs">
+                  Экспорт в Markdown
+                </Button>
+              </a>
+              <a href={api.exportUrl(id, 'pdf')} download>
+                <Button variant="secondary" className="text-xs">
+                  Экспорт в PDF
+                </Button>
+              </a>
+            </div>
+            {job.insights.length > 0 && (
+              <div className="flex gap-1 p-1 rounded-lg bg-card border border-border" role="group" aria-label="Вид отчёта">
+                <Button
+                  variant={view === 'cards' ? 'primary' : 'ghost'}
+                  onClick={() => setView('cards')}
+                  className="text-xs px-3 py-1.5"
+                  aria-pressed={view === 'cards'}
+                >
+                  Карточки
+                </Button>
+                <Button
+                  variant={view === 'table' ? 'primary' : 'ghost'}
+                  onClick={() => setView('table')}
+                  className="text-xs px-3 py-1.5"
+                  aria-pressed={view === 'table'}
+                >
+                  Таблица
+                </Button>
+              </div>
+            )}
           </div>
 
           {job.insights.length === 0 ? (
             <EmptyState title="Инсайтов не найдено" description="Попробуйте переформулировать тему." />
-          ) : (
+          ) : view === 'cards' ? (
             <div className="space-y-4">
               {job.insights.map((insight) => (
                 <InsightCard key={insight.id} insight={insight} jobId={id} />
               ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted border-b border-border">
+                    <th className="pb-2 pr-4 font-medium">Инсайт</th>
+                    <th className="pb-2 pr-4 font-medium">Источник</th>
+                    <th className="pb-2 pr-4 font-medium">Релевантность</th>
+                    <th className="pb-2 font-medium">Отметить</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {job.insights.map((insight) => (
+                    <InsightRow key={insight.id} insight={insight} jobId={id} />
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>

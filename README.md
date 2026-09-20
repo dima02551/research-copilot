@@ -39,6 +39,30 @@ described in Alfa-Bank's "Инженер агентной разработки" 
   no API cost. This is what the Playwright e2e test runs against. Set the
   key and the exact same endpoints do real research.
 
+## Соответствие вакансии
+
+Для быстрой сверки при скрининге — что из "Инженер агентной разработки" (Альфа-Банк) уже есть в этом репозитории и где именно:
+
+| Пункт вакансии | Где в репозитории |
+|---|---|
+| Мастер запуска исследования | `frontend/src/pages/HomePage.tsx` |
+| Прогресс фонового прогона | SSE: `backend/app/sse.py` + `frontend/src/hooks/useResearchEvents.ts` → `ProgressStage` |
+| Отчёт с инсайтами и доказательствами | `ReportPage.tsx` — каждый инсайт несёт `evidence_quote` + `source_url` |
+| Разметка релевантности | `PATCH /api/research/insights/{id}` + кнопки 👍/👎 на карточке и в строке таблицы |
+| Экспорт | `backend/app/export.py` (Markdown, PDF) |
+| Перевод с мок-данных на реальный API | Никаких моков — SPA всегда говорит с настоящим FastAPI; демо-режим подменяет только вызов Claude, не транспорт |
+| Типы, зеркалирующие контракт API | `npm run gen:types` → `frontend/src/api/schema.ts` (OpenAPI-generated), `types.ts` — тонкие алиасы поверх него |
+| REST + SSE | REST — `backend/app/routes/research.py`; SSE — `GET /api/research/{id}/events` |
+| Своя библиотека компонентов (без UI-кита) | `frontend/src/ui/` — Button, Card, Badge, EmptyState, ProgressStage |
+| Состояния пустоты и ошибок | `EmptyState.tsx` (нет инсайтов), явный блок `job.status === 'failed'` в `ReportPage.tsx` |
+| Доступность | `role="status" aria-live="polite"` на прогрессе (скринридер озвучивает смену стадии, не декоративный степпер), `aria-pressed` на переключателе вида |
+| Таблицы/отчёты (плюсом) | Переключатель "Карточки / Таблица" на странице отчёта — одни и те же данные, два представления |
+| Тесты | Vitest — `frontend/src/ui/*.test.tsx` (8 тестов); Playwright — `frontend/e2e/research-flow.spec.ts` (2 сценария, оба вида отчёта) |
+| Базовый Python на стороне API (плюсом) | Весь бэкенд — Python/FastAPI, не "чуть-чуть" |
+| Инструменты агентной разработки | Весь репозиторий построен в Claude Code — от первого коммита до этой таблицы |
+
+Не закрыто честно: экраны "второй очереди" (конструктор сценариев, чат по результатам, расписания, шаблоны отчётов) — см. "What's next" ниже. Банковского опыта как такового нет — только осознанная имитация того, как выглядела бы внутренняя аналитик-копилот система.
+
 ## Stack
 
 | Layer | Choice | Why |
@@ -93,5 +117,3 @@ npm run test:e2e     # Playwright — needs the backend running on :8000 first
   templates — the "second wave" screens from the job posting; same
   architecture, bigger surface.
 - Redis-backed SSE (current pub/sub is in-process, fine for one instance).
-- OpenAPI-generated frontend types (`npm run gen:types`) once the API
-  contract stabilizes — hand-written types in `src/api/types.ts` for now.

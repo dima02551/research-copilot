@@ -27,3 +27,23 @@ test('full flow: start research -> watch progress -> review report -> export', a
   const mdLink = page.getByRole('link', { name: 'Экспорт в Markdown' });
   await expect(mdLink).toHaveAttribute('href', /\/export\?format=md$/);
 });
+
+test('table view shows the same insights and relevance marking still works', async ({ page }) => {
+  await page.goto('/');
+  await page.getByTestId('topic-input').fill('Table view test topic');
+  await page.getByTestId('start-button').click();
+  await expect(page.getByTestId('insight-card').first()).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole('button', { name: 'Таблица' }).click();
+
+  const rows = page.getByTestId('insight-row');
+  await expect(rows).toHaveCount(3);
+  // Switching view is presentation-only — cards disappear, same data survives as rows.
+  await expect(page.getByTestId('insight-card')).toHaveCount(0);
+
+  await rows.first().getByRole('button', { name: '👎' }).click();
+  await expect(rows.first().getByText('Не релевантно', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Карточки' }).click();
+  await expect(page.getByTestId('insight-card').first().getByText('Не релевантно', { exact: true })).toBeVisible();
+});

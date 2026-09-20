@@ -12,10 +12,14 @@ export const ProgressStage: React.FC<{ status: string; detail: string }> = ({ st
     0,
     STAGES.findIndex((s) => s.key === status),
   );
+  const currentLabel = STAGES[activeIndex]?.label ?? status;
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4">
+      {/* Visual stepper is decorative on top of the text status below it — a screen
+          reader that announced "1, 2, 3, 4" for each dot on every SSE update would be
+          noise. The real progress semantics live in the aria-live region underneath. */}
+      <div className="flex items-center gap-2 mb-4" aria-hidden="true">
         {STAGES.map((stage, i) => (
           <React.Fragment key={stage.key}>
             <div
@@ -31,12 +35,13 @@ export const ProgressStage: React.FC<{ status: string; detail: string }> = ({ st
           </React.Fragment>
         ))}
       </div>
-      <div className="flex items-center gap-3">
-        <span className="relative flex h-2.5 w-2.5">
+      <div className="flex items-center gap-3" role="status" aria-live="polite">
+        <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
         </span>
         <p className="text-sm text-muted" data-testid="stage-detail">
+          <span className="sr-only">{currentLabel}: </span>
           {detail}
         </p>
       </div>
